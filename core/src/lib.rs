@@ -42,17 +42,6 @@ pub enum State {
     WRITE,
 }
 
-impl State {
-    pub fn next(&self) -> Self {
-        match self {
-            State::FETCH => State::DECODE,
-            State::DECODE => State::EXECUTE,
-            State::EXECUTE => State::WRITE,
-            State::WRITE => State::FETCH,
-        }
-    }
-}
-
 pub const STACKSIZE: usize = 124;
 
 pub struct Core {
@@ -107,7 +96,6 @@ impl Core {
                 self.state = State::FETCH;
             }
         }
-        self.state.next();
         self.deblog();
     }
 

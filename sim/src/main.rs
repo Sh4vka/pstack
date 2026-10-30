@@ -1,4 +1,4 @@
-mod core;
+use core;
 
 fn main() {
     let mem = vec![4, 1, 2, 3, 4];
