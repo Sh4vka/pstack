@@ -81,6 +81,10 @@ impl Core {
         }
     }
 
+    pub fn reset(&mut self) {
+        *self = Core::new();
+    }
+
     pub fn step(&mut self, prog: &Vec<i8>, mem: &Vec<i8>) {
         if self.halt { return; }
         match self.state {
