@@ -46,6 +46,20 @@ pub enum State {
 
 pub const STACKSIZE: usize = 124;
 
+#[derive(Debug, Clone, Copy, Default, PartialEq)]
+pub struct Flags { pub z: bool, pub n: bool, pub c: bool, pub v: bool }
+
+fn alu_add(a: i8, b: i8) -> (i8, Flags) {
+    let (res, v) = a.overflowing_add(b);
+    let (_, c)   = (a as u8).overflowing_add(b as u8);
+    (res, Flags { z: res == 0, n: res < 0, c, v })
+}
+
+fn alu_mul(a: i8, b: i8) -> (i8, Flags) {
+    let (res, v) = a.overflowing_mul(b);
+    (res, Flags { z: res == 0, n: res < 0, c: v, v })
+}
+
 pub struct Core {
     pub stack: [i8; STACKSIZE],
     pub sp: isize,
@@ -60,6 +74,8 @@ pub struct Core {
     pub cmd: Command,
     pub state: State,
     pub halt: bool,
+    pub flags: Flags,
+    pub alu_flags: Flags,
 }
 
 impl Core {
@@ -78,6 +94,8 @@ impl Core {
             cmd: Command::NOP,
             state: State::FETCH,
             halt: false,
+            flags: Flags::default(),
+            alu_flags: Flags::default(),
         }
     }
 
@@ -130,6 +148,10 @@ impl Core {
                 self.op1 = self.stack[self.sp as usize];
                 self.op2 = self.stack[(self.sp - 1) as usize];
             }
+            Command::MUL => {
+                self.op1 = self.stack[self.sp as usize];
+                self.op2 = self.stack[(self.sp - 1) as usize];
+            }
             Command::SWAP => {
                 self.op1 = self.stack[self.sp as usize];
                 self.op2 = self.stack[(self.sp - 1) as usize];
@@ -150,9 +172,9 @@ impl Core {
     fn execute(&mut self, mem: &Vec<i8>) {
         match self.cmd {
             Command::DUP => self.res = self.op1,
-            Command::ADD => self.res = self.op1 + self.op2,
-            Command::INC => self.res = self.op1 + 1,
-            Command::READ => self.res = mem[self.op1 as usize],
+            Command::ADD => { let (r, f) = alu_add(self.op2, self.op1); self.res = r; self.alu_flags = f; }
+            Command::MUL => { let (r, f) = alu_mul(self.op2, self.op1); self.res = r; self.alu_flags = f; }
+            Command::INC => { let (r, f) = alu_add(self.op1, 1);        self.res = r; self.alu_flags = f; }            Command::READ => self.res = mem[self.op1 as usize],
             Command::LOOP => self.res = self.op1 - 1,
             _ => {}
         }
@@ -188,13 +210,18 @@ impl Core {
             Command::ADD => {
                 self.sp -= 1;
                 self.stack[self.sp as usize] = self.res;
+                self.flags = self.alu_flags;
                 self.pc += 1;
             },
             Command::MUL => {
+                self.sp -= 1;
+                self.stack[self.sp as usize] = self.res;
+                self.flags = self.alu_flags;
                 self.pc += 1;
             }
             Command::INC => {
                 self.stack[self.sp as usize] = self.res;
+                self.flags = self.alu_flags;
                 self.pc += 1;
             },
             Command::READ => {

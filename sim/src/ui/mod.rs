@@ -4,7 +4,7 @@ use std::{
     rc::Rc,
     time::Duration
 };
-use core::{Command, Core, State, STACKSIZE};
+use stcore::{Command, Core, State, STACKSIZE};
 
 const CSS: &str = "
 .sp   { background: #f9a825; color: black; font-weight: bold; }
@@ -53,7 +53,7 @@ impl View {
         let right = gtk::Box::new(gtk::Orientation::Vertical, 8);
 
         let regs_grid = gtk::Grid::builder().column_spacing(12).row_spacing(2).build();
-        let names = ["pc", "sp", "cnt", "cmd", "addr", "lit", "op1", "op2", "op3", "res"];
+        let names = ["pc", "sp", "cnt", "cmd", "addr", "lit", "op1", "op2", "op3", "res", "fZ", "fN", "fV"];
         let mut regs = vec![];
         for (i, n) in names.iter().enumerate() {
             let v = label("");
@@ -117,6 +117,9 @@ impl View {
                 "op1" => c.op1.to_string(),
                 "op2" => c.op2.to_string(),
                 "op3" => c.op3.to_string(),
+                "fZ" => c.flags.z.to_string(),
+                "fN" => c.flags.n.to_string(),
+                "fV" => c.flags.v.to_string(),
                 _ => c.res.to_string(),
             };
             l.set_text(&t);
@@ -194,7 +197,7 @@ pub fn build_ui(app: &gtk::Application) {
                         btn.set_active(false);
                         return glib::ControlFlow::Break;
                     }
-                    core.borrow_mut().step(&prog.borrow(), &mem.borrow());
+                    core.borrow_mut().next(&prog.borrow(), &mem.borrow());
                     view.update(&core.borrow());
                     glib::ControlFlow::Continue
                 });

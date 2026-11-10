@@ -52,10 +52,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "core"
-version = "0.1.0"
-
-[[package]]
 name = "equivalent"
 version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -535,8 +531,8 @@ dependencies = [
 name = "sim"
 version = "0.1.0"
 dependencies = [
- "core",
  "gtk4",
+ "stcore",
 ]
 
 [[package]]
@@ -550,6 +546,10 @@ name = "smallvec"
 version = "1.16.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "149309498a5f7334b12ddae0cad8aba81ce785fe91755068867e017cf98fee46"
+
+[[package]]
+name = "stcore"
+version = "0.1.0"
 
 [[package]]
 name = "syn"

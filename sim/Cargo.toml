@@ -4,5 +4,5 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-core = { path = "../core" }
+stcore = { path = "../stcore" }
 gtk = { version = "0.10", package = "gtk4", features = ["v4_10"] }

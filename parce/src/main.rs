@@ -41,6 +41,23 @@ fn opcode(m: &str) -> Option<(u8, bool)> {
     })
 }
 
+fn parse_num(s: &str, ln: usize) -> Result<u8, String> {
+    let s = s.trim();
+    let (neg, body) = match s.strip_prefix('-') {
+        Some(r) => (true, r),
+        None => (false, s),
+    };
+    let v = if let Some(h) = body.strip_prefix("0x") {
+        i16::from_str_radix(h, 16)
+    } else {
+        body.parse::<i16>()
+    }
+    .map_err(|_| format!("{ln}: плохое число '{s}'"))?;
+    let v = if neg { -v } else { v };
+    let v = i8::try_from(v).map_err(|_| format!("{ln}: число '{s}' вне диапазона -128..127"))?;
+    Ok(v as u8)
+}
+
 fn assembly(src: &str) -> Result<(Vec<u8>, Vec<u8>), String> {
     let mut symbols: HashMap<String, u8> = HashMap::new();
     let mut instr: Vec<Instr> = Vec::new();
@@ -79,7 +96,7 @@ fn assembly(src: &str) -> Result<(Vec<u8>, Vec<u8>), String> {
                     .ok_or(format!("Массив должен быть в []"))?;
                 define(name.trim(), mem.len(), ln)?;
                 for n in val.split(',').map(str::trim).filter(|s| !s.is_empty()) {
-                    mem.push(n.parse::<u8>().map_err(|_| format!("{ln}: плохое число '{n}'"))?);
+                    mem.push(parse_num(n, ln)?);
                 }
             }
 
@@ -98,10 +115,13 @@ fn assembly(src: &str) -> Result<(Vec<u8>, Vec<u8>), String> {
                 }
                 let (op, has_operand) = opcode(&m).ok_or(format!("{ln}: Неизвестная команда {m}"))?;
                 let operand = match (has_operand, args) {
-                    (true, Some(a)) => Some(match a.parse::<u8>() {
-                        Ok(n) => Operand::Num(n),
-                        Err(_) => Operand::Sym(a.to_string()),
-                    }),
+                    (true, Some(a)) => Some(
+                        if a.starts_with(|c: char| c.is_ascii_digit() || c == '-') {
+                            Operand::Num(parse_num(a, ln)?)
+                        } else {
+                            Operand::Sym(a.to_string())
+                        }
+                    ),
                     (true, None) => return Err(format!("{ln}: {m} требуется операнд")),
                     (false, Some(_)) => return Err(format!("{ln}: {m} без операнда")),
                     (false, None) => None,

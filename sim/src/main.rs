@@ -1,4 +1,3 @@
-use core;
 mod ui;
 
 use gtk::{glib, prelude::*};
