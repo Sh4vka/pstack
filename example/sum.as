@@ -18,3 +18,4 @@ lp:
     LOOP lp
 
     SWAP
+    HALT

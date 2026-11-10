@@ -12,6 +12,7 @@ pub enum Command {
     INC,
     MUL,
     NOP,
+    HALT
 }
 
 impl Command {
@@ -29,6 +30,7 @@ impl Command {
             9 => Command::MUL,
             10 => Command::READ,
             -0x7f => Command::NOP,
+            11 => Command::HALT,
             _ => panic!("Error parse command")
         }
     }
@@ -56,7 +58,8 @@ pub struct Core {
     pub pc: usize,
     pub addr: usize,
     pub cmd: Command,
-    pub state: State
+    pub state: State,
+    pub halt: bool,
 }
 
 impl Core {
@@ -73,13 +76,15 @@ impl Core {
             pc: 0,
             addr: 0,
             cmd: Command::NOP,
-            state: State::FETCH
+            state: State::FETCH,
+            halt: false,
         }
     }
-    
+
     pub fn step(&mut self, prog: &Vec<i8>, mem: &Vec<i8>) {
+        if self.halt { return; }
         match self.state {
-            State::FETCH => { 
+            State::FETCH => {
                 self.fetch(prog);
                 self.state = State::DECODE;
             },
@@ -208,6 +213,7 @@ impl Core {
             Command::NOP => {
                 self.pc += 1;
             },
+            Command::HALT => self.halt = true,
         }
     }
 

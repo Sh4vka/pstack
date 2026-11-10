@@ -36,6 +36,7 @@ fn opcode(m: &str) -> Option<(u8, bool)> {
         "MUL"  => (9, false),
         "READ" => (10, false),
         "NOP"  => (0xff, false),
+        "HALT" => (11, false),
         _ => return None,
     })
 }

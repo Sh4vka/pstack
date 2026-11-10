@@ -1,29 +1,23 @@
 use core;
+use std::{env, fs};
+
+const PROG_SIZE: usize = 384;
 
 fn main() {
-    let mem = vec![4, 1, 2, 3, 4];
-    let prog = vec![
-        0, 0,
-        10,
-        5,
-        0, 0,
-        0, 1,
+    let path = env::args().nth(1).unwrap_or_else(|| "firmware.bin".to_string());
+    let fw = fs::read(&path).unwrap_or_else(|e| {
+        eprintln!("{path}: {e}");
+        std::process::exit(1);
+    });
+    if fw.len() < PROG_SIZE {
+        eprintln!("{path}: файл короче {PROG_SIZE} байт");
+        std::process::exit(1);
+    }
+    let prog: Vec<i8> = fw[..PROG_SIZE].iter().map(|&b| b as i8).collect();
+    let mem: Vec<i8> = fw[PROG_SIZE..].iter().map(|&b| b as i8).collect();
 
-        4,
-        10,
-        3,
-        7,
-        2,
-        8,
-        6, 8,
-
-        2,
-        -0x7f
-    ];
     let mut core = core::Core::new();
-    core.next(&prog, &mem);
-
-    while core.cmd != core::Command::NOP {
-        core.next(&prog, &mem);
+    while !core.halt {
+        core.step(&prog, &mem);
     }
 }
