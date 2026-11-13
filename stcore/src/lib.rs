@@ -174,7 +174,8 @@ impl Core {
             Command::DUP => self.res = self.op1,
             Command::ADD => { let (r, f) = alu_add(self.op2, self.op1); self.res = r; self.alu_flags = f; }
             Command::MUL => { let (r, f) = alu_mul(self.op2, self.op1); self.res = r; self.alu_flags = f; }
-            Command::INC => { let (r, f) = alu_add(self.op1, 1);        self.res = r; self.alu_flags = f; }            Command::READ => self.res = mem[self.op1 as usize],
+            Command::INC => { let (r, f) = alu_add(self.op1, 1);        self.res = r; self.alu_flags = f; }
+            Command::READ => self.res = mem[self.op1 as usize],
             Command::LOOP => self.res = self.op1 - 1,
             _ => {}
         }

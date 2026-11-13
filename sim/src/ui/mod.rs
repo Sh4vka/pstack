@@ -16,6 +16,7 @@ const CSS: &str = "
 struct View {
     scroll: gtk::ScrolledWindow,
     idx: Vec<gtk::Label>,
+    bin: Vec<gtk::Label>,
     dec: Vec<gtk::Label>,
     hex: Vec<gtk::Label>,
     regs: Vec<(&'static str, gtk::Label)>,
@@ -35,16 +36,17 @@ impl View {
         let root = gtk::Box::new(gtk::Orientation::Horizontal, 12);
 
         let grid = gtk::Grid::builder().column_spacing(16).build();
-        for (c, h) in ["#", "dec", "hex"].iter().enumerate() {
+        for (c, h) in ["#", "bin", "dec", "hex"].iter().enumerate() {
             grid.attach(&label(h), c as i32, 0, 1, 1);
         }
-        let (mut idx, mut dec, mut hex) = (vec![], vec![], vec![]);
+        let (mut idx, mut bin, mut dec, mut hex) = (vec![], vec![], vec![], vec![]);
         for i in 0..STACKSIZE {
-            let (a, b, c) = (label(&i.to_string()), label(""), label(""));
+            let (a, b, c, d) = (label(&i.to_string()), label(""), label(""), label(""));
             grid.attach(&a, 0, i as i32 + 1, 1, 1);
             grid.attach(&b, 1, i as i32 + 1, 1, 1);
             grid.attach(&c, 2, i as i32 + 1, 1, 1);
-            idx.push(a); dec.push(b); hex.push(c);
+            grid.attach(&d, 3, i as i32 + 1, 1, 1);
+            idx.push(a); bin.push(b); dec.push(c); hex.push(d);
         }
         let scroll = gtk::ScrolledWindow::builder()
             .child(&grid).min_content_width(220).vexpand(true).build();
@@ -79,17 +81,18 @@ impl View {
         right.append(&f3);
 
         root.append(&right);
-        (View { scroll, idx, dec, hex, regs, stages, alu }, root)
+        (View { scroll, idx, bin, dec, hex, regs, stages, alu }, root)
     }
 
     fn update(&self, c: &Core) {
         for i in 0..STACKSIZE {
             let v = c.stack[i];
+            self.bin[i].set_text(&format!("{:08b}", v as i8));
             self.dec[i].set_text(&v.to_string());
             self.hex[i].set_text(&format!("{:02X}", v as u8));
             let is_sp = i as isize == c.sp;
             let free = i as isize > c.sp;
-            for l in [&self.idx[i], &self.dec[i], &self.hex[i]] {
+            for l in [&self.idx[i], &self.bin[i], &self.dec[i], &self.hex[i]] {
                 if is_sp { l.add_css_class("sp") } else { l.remove_css_class("sp") }
                 if free { l.add_css_class("free") } else { l.remove_css_class("free") }
             }
@@ -161,7 +164,7 @@ pub fn build_ui(app: &gtk::Application) {
 
     let bar = gtk::Box::new(gtk::Orientation::Horizontal, 6);
     let b_load = gtk::Button::with_label("Загрузить");
-    let b_step = gtk::Button::with_label("Такт");
+    let b_step = gtk::Button::with_label("Стадия");
     let b_cmd  = gtk::Button::with_label("Команда");
     let b_run  = gtk::ToggleButton::with_label("Пуск");
     let b_rst  = gtk::Button::with_label("Сброс");
@@ -191,7 +194,7 @@ pub fn build_ui(app: &gtk::Application) {
             if btn.is_active() {
                 let (core, prog, mem, view, timer2, btn) =
                     (core.clone(), prog.clone(), mem.clone(), view.clone(), timer.clone(), btn.clone());
-                let id = glib::timeout_add_local(Duration::from_millis(200), move || {
+                let id = glib::timeout_add_local(Duration::from_millis(50), move || {
                     if core.borrow().halt {
                         timer2.borrow_mut().take();
                         btn.set_active(false);
